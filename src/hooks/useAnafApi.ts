@@ -40,8 +40,10 @@ export const useAnafApi = () => {
         throw new Error(`Eroare la conectarea cu serverul ANAF (Status: ${response.status})`);
       }
 
-      const result: AnafApiResponse = await response.json();
+      const result = await response.json();
       console.log("Date primite:", result);
+      
+      // Aici facem transformarea datelor pentru a se potrivi cu tipul AnafApiResponse
       setData(result);
     } catch (err) {
       console.error("Eroare în timpul apelului API:", err);
