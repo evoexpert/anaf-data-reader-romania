@@ -12,6 +12,7 @@ import { CompanyBalance } from './CompanyBalance';
 import { FinancialCharts } from './FinancialCharts';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CompanyBalance as CompanyBalanceType } from '@/types/anafBilant';
+import { AlertCircle, RefreshCw } from 'lucide-react';
 
 export const AnafSearch = () => {
   const [cui, setCui] = useState('');
@@ -19,6 +20,7 @@ export const AnafSearch = () => {
   const { getBalanceData, loading: loadingBalance, error: errorBalance, data: balanceData } = useAnafBilant();
   const [multiYearData, setMultiYearData] = useState<Record<string, CompanyBalanceType | null>>({});
   const [activeTab, setActiveTab] = useState('overview');
+  const [searchAttempted, setSearchAttempted] = useState(false);
 
   // Calculăm anii pentru care putem solicita bilanțuri (ultimii 3 ani, excluzând anul curent)
   const currentYear = new Date().getFullYear();
@@ -30,32 +32,64 @@ export const AnafSearch = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (cui.trim()) {
-      setMultiYearData({});
-      toast.info("Se trimit date către API-ul ANAF...");
-      await searchCompany(cui.trim());
+    
+    // Validare CUI
+    const cleanCui = cui.trim();
+    if (!cleanCui) {
+      toast.error("Introduceți un CUI valid.");
+      return;
+    }
+    
+    // Resetăm datele anterioare și setăm flag-ul de încercare
+    setMultiYearData({});
+    setSearchAttempted(true);
+    
+    toast.info("Se trimit date către API-ul ANAF...");
+    
+    try {
+      const companyResult = await searchCompany(cleanCui);
       
-      // Fetch data for the available years
-      for (const year of availableYears) {
-        toast.info(`Se solicită bilanțul pentru anul ${year}...`);
-        const balanceData = await getBalanceData(cui.trim(), year);
-        
-        if (balanceData) {
-          setMultiYearData(prev => ({
-            ...prev,
-            [year.toString()]: balanceData
-          }));
+      if (!companyResult) {
+        toast.error("Nu s-au putut obține date despre companie.");
+        return;
+      }
+      
+      // Dacă am găsit compania, încercăm să obținem și datele bilanțurilor
+      if (companyResult.found && companyResult.found.length > 0) {
+        // Fetch data for the available years
+        for (const year of availableYears) {
+          toast.info(`Se solicită bilanțul pentru anul ${year}...`);
+          
+          try {
+            const balanceData = await getBalanceData(cleanCui, year);
+            
+            if (balanceData) {
+              setMultiYearData(prev => ({
+                ...prev,
+                [year.toString()]: balanceData
+              }));
+            }
+          } catch (error) {
+            console.error(`Eroare la obținerea bilanțului pentru anul ${year}:`, error);
+            // Continuăm cu următorul an chiar dacă acest an a eșuat
+          }
         }
+        
+        // Switch to the financial tab after fetching data
+        if (Object.values(multiYearData).some(data => data !== null)) {
+          setActiveTab('financial');
+        }
+      } else {
+        toast.warning("Nu s-au găsit informații pentru acest CUI.");
       }
-      
-      // Switch to the financial tab after fetching data
-      if (Object.values(multiYearData).some(data => data !== null)) {
-        setActiveTab('financial');
-      }
+    } catch (error) {
+      console.error("Eroare în timpul procesului de căutare:", error);
+      toast.error("A apărut o eroare în timpul procesului de căutare. Încercați din nou.");
     }
   };
 
   const hasMultiYearData = Object.values(multiYearData).some(data => data !== null && data.i && data.i.length > 0);
+  const isLoading = loadingCompany || loadingBalance;
 
   return (
     <div className="max-w-4xl mx-auto p-4 space-y-4">
@@ -67,17 +101,29 @@ export const AnafSearch = () => {
           placeholder="Introduceți CUI-ul companiei"
           className="flex-1"
         />
-        <Button type="submit" disabled={loadingCompany || loadingBalance || !cui.trim()}>
-          {loadingCompany || loadingBalance ? 'Se caută...' : 'Caută'}
+        <Button type="submit" disabled={isLoading || !cui.trim()}>
+          {isLoading ? (
+            <>
+              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+              Se caută...
+            </>
+          ) : (
+            'Caută'
+          )}
         </Button>
       </form>
 
       {(errorCompany || errorBalance) && (
         <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
           <AlertDescription>
             <div className="space-y-2">
               {errorCompany && <p>{errorCompany}</p>}
               {errorBalance && <p>{errorBalance}</p>}
+              <p className="text-sm mt-2 font-medium">
+                Asigurați-vă că sunteți conectat la internet și încercați din nou. 
+                Dacă problema persistă, API-ul ANAF poate fi indisponibil temporar.
+              </p>
             </div>
           </AlertDescription>
         </Alert>
@@ -108,7 +154,10 @@ export const AnafSearch = () => {
               </div>
             ) : (
               loadingBalance ? (
-                <div className="py-8 text-center">Se încarcă datele financiare...</div>
+                <div className="py-8 text-center">
+                  <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-4" />
+                  Se încarcă datele financiare...
+                </div>
               ) : (
                 <div className="py-8 text-center">
                   Nu există date financiare disponibile pentru anii {availableYears.join(', ')}.
@@ -122,6 +171,15 @@ export const AnafSearch = () => {
       {companyData && companyData.notFound && companyData.notFound.length > 0 && (
         <Alert>
           <AlertDescription>Nu s-au găsit informații pentru CUI-ul introdus.</AlertDescription>
+        </Alert>
+      )}
+      
+      {!companyData && searchAttempted && !isLoading && !errorCompany && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Nu s-au primit date de la API-ul ANAF. Vă rugăm să încercați din nou mai târziu.
+          </AlertDescription>
         </Alert>
       )}
     </div>
