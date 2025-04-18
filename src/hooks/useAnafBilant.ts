@@ -9,10 +9,20 @@ export const useAnafBilant = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<CompanyBalance | null>(null);
+  const isLovableEnvironment = window.location.hostname.includes('lovableproject.com') || 
+                              window.location.hostname.includes('lovable.app');
 
   const getBalanceData = async (cui: string, year: number) => {
     setLoading(true);
     setError(null);
+    
+    // Verificăm dacă suntem în mediul Lovable
+    if (isLovableEnvironment) {
+      console.log("Rulăm în mediul Lovable - API-ul de bilanț ANAF nu va funcționa");
+      setLoading(false);
+      setError("API-ul de bilanțuri ANAF nu poate fi accesat din mediul Lovable.");
+      return null;
+    }
     
     try {
       console.log(`Se solicită bilanțul pentru CUI ${cui} și anul ${year}...`);
@@ -47,8 +57,10 @@ export const useAnafBilant = () => {
       let errorMessage = err instanceof Error ? err.message : 'A apărut o eroare neașteptată';
       
       if (errorMessage.includes('JSON')) {
-        errorMessage = "Eroare de formatare: Răspunsul de la serverul ANAF nu este în format JSON valid. Este posibil ca serviciul să fie indisponibil temporar sau proxy-ul să nu funcționeze corect.";
-        toast.error("API-ul ANAF nu a răspuns corect. Încercați din nou mai târziu.");
+        errorMessage = "Eroare de formatare: Răspunsul de la serverul ANAF nu este în format JSON valid. Este posibil ca serviciul să fie indisponibil temporar.";
+        if (!isLovableEnvironment) {
+          toast.error("API-ul ANAF nu a răspuns corect. Încercați din nou mai târziu.");
+        }
       }
       
       setError(errorMessage);

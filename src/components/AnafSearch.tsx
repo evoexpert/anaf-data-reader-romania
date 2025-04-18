@@ -12,12 +12,12 @@ import { CompanyBalance } from './CompanyBalance';
 import { FinancialCharts } from './FinancialCharts';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CompanyBalance as CompanyBalanceType } from '@/types/anafBilant';
-import { AlertCircle, RefreshCw, Info } from 'lucide-react';
+import { AlertCircle, RefreshCw, Info, ArrowDownToLine } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 
 export const AnafSearch = () => {
   const [cui, setCui] = useState('');
-  const { searchCompany, loading: loadingCompany, error: errorCompany, data: companyData } = useAnafApi();
+  const { searchCompany, loading: loadingCompany, error: errorCompany, data: companyData, isLovableEnvironment } = useAnafApi();
   const { getBalanceData, loading: loadingBalance, error: errorBalance, data: balanceData } = useAnafBilant();
   const [multiYearData, setMultiYearData] = useState<Record<string, CompanyBalanceType | null>>({});
   const [activeTab, setActiveTab] = useState('overview');
@@ -45,13 +45,17 @@ export const AnafSearch = () => {
     setMultiYearData({});
     setSearchAttempted(true);
     
-    toast.info("Se trimit date către API-ul ANAF...");
+    if (!isLovableEnvironment) {
+      toast.info("Se trimit date către API-ul ANAF...");
+    }
     
     try {
       const companyResult = await searchCompany(cleanCui);
       
       if (!companyResult) {
-        toast.error("Nu s-au putut obține date despre companie.");
+        if (!isLovableEnvironment) {
+          toast.error("Nu s-au putut obține date despre companie.");
+        }
         return;
       }
       
@@ -59,7 +63,9 @@ export const AnafSearch = () => {
       if (companyResult.found && companyResult.found.length > 0) {
         // Fetch data for the available years
         for (const year of availableYears) {
-          toast.info(`Se solicită bilanțul pentru anul ${year}...`);
+          if (!isLovableEnvironment) {
+            toast.info(`Se solicită bilanțul pentru anul ${year}...`);
+          }
           
           try {
             const balanceData = await getBalanceData(cleanCui, year);
@@ -80,40 +86,47 @@ export const AnafSearch = () => {
         if (Object.values(multiYearData).some(data => data !== null)) {
           setActiveTab('financial');
         }
-      } else {
+      } else if (!isLovableEnvironment) {
         toast.warning("Nu s-au găsit informații pentru acest CUI.");
       }
     } catch (error) {
       console.error("Eroare în timpul procesului de căutare:", error);
-      toast.error("A apărut o eroare în timpul procesului de căutare. Încercați din nou.");
+      if (!isLovableEnvironment) {
+        toast.error("A apărut o eroare în timpul procesului de căutare. Încercați din nou.");
+      }
     }
   };
 
   const hasMultiYearData = Object.values(multiYearData).some(data => data !== null && data.i && data.i.length > 0);
   const isLoading = loadingCompany || loadingBalance;
-  const isAPIError = errorCompany && errorCompany.includes("JSON");
 
   return (
     <div className="max-w-4xl mx-auto p-4 space-y-4">
-      {isAPIError && (
+      {isLovableEnvironment && (
         <Card className="bg-amber-50 dark:bg-amber-950 border-amber-300 dark:border-amber-800 mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Info className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-              Informație importantă
+              Mediu Lovable detectat
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="mb-2">
-              API-ul ANAF nu poate fi accesat direct din mediul de preview Lovable din cauza restricțiilor CORS și configurației proxy.
+              API-ul ANAF nu poate fi accesat direct din mediul Lovable din cauza restricțiilor CORS și limitărilor de securitate.
             </p>
-            <p className="mb-2">
-              Pentru a testa complet această aplicație, clonați codul și rulați-l local cu Vite, unde configurația proxy din vite.config.ts va funcționa corect.
+            <p className="font-medium">
+              Pentru a testa complet această aplicație:
             </p>
+            <ol className="list-decimal pl-6 mt-2 space-y-2">
+              <li>Clonați codul pe calculatorul dumneavoastră</li>
+              <li>Instalați dependențele: <code className="bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">npm install</code> sau <code className="bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">yarn</code></li>
+              <li>Rulați aplicația local: <code className="bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">npm run dev</code> sau <code className="bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">yarn dev</code></li>
+            </ol>
           </CardContent>
-          <CardFooter className="text-sm text-muted-foreground">
-            <p>
-              Eroare: Răspunsul de la serverul ANAF este HTML în loc de JSON, ceea ce indică faptul că proxy-ul nu funcționează în acest mediu.
+          <CardFooter className="flex flex-col items-start text-sm text-muted-foreground">
+            <p className="flex items-center gap-1">
+              <ArrowDownToLine className="h-4 w-4" /> 
+              Local, configurația proxy din vite.config.ts va funcționa corect.
             </p>
           </CardFooter>
         </Card>
@@ -146,10 +159,12 @@ export const AnafSearch = () => {
             <div className="space-y-2">
               {errorCompany && <p>{errorCompany}</p>}
               {errorBalance && <p>{errorBalance}</p>}
-              <p className="text-sm mt-2 font-medium">
-                Asigurați-vă că sunteți conectat la internet și încercați din nou. 
-                Dacă problema persistă, API-ul ANAF poate fi indisponibil temporar.
-              </p>
+              {!isLovableEnvironment && (
+                <p className="text-sm mt-2 font-medium">
+                  Asigurați-vă că sunteți conectat la internet și încercați din nou. 
+                  Dacă problema persistă, API-ul ANAF poate fi indisponibil temporar.
+                </p>
+              )}
             </div>
           </AlertDescription>
         </Alert>
@@ -200,7 +215,7 @@ export const AnafSearch = () => {
         </Alert>
       )}
       
-      {!companyData && searchAttempted && !isLoading && !errorCompany && (
+      {!companyData && searchAttempted && !isLoading && !errorCompany && !isLovableEnvironment && (
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
