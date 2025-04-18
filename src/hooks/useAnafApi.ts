@@ -14,6 +14,7 @@ export const useAnafApi = () => {
     setError(null);
     
     try {
+      console.log("Trimitem request către API-ul ANAF...");
       const currentDate = new Date().toISOString().split('T')[0];
       const response = await fetch(ANAF_API_URL, {
         method: 'POST',
@@ -28,14 +29,25 @@ export const useAnafApi = () => {
         ]),
       });
 
+      console.log("Răspuns primit:", response);
+      
       if (!response.ok) {
-        throw new Error('Eroare la conectarea cu serverul ANAF');
+        throw new Error(`Eroare la conectarea cu serverul ANAF (Status: ${response.status})`);
       }
 
       const result: AnafApiResponse = await response.json();
       setData(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'A apărut o eroare neașteptată');
+      console.error("Eroare în timpul apelului API:", err);
+      
+      let errorMessage = err instanceof Error ? err.message : 'A apărut o eroare neașteptată';
+      
+      // Verificăm dacă eroarea este legată de CORS
+      if (errorMessage.toLowerCase().includes('fetch') || errorMessage.includes('NetworkError')) {
+        errorMessage = "Eroare de CORS: Browserul nu permite apelarea directă a API-ului ANAF. Consultați recomandările de mai jos.";
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

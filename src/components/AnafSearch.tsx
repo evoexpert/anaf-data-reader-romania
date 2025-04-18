@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAnafApi } from '@/hooks/useAnafApi';
+import { toast } from '@/components/ui/sonner';
 
 export const AnafSearch = () => {
   const [cui, setCui] = useState('');
@@ -12,6 +13,7 @@ export const AnafSearch = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (cui.trim()) {
+      toast.info("Se trimit date către API-ul ANAF...");
       searchCompany(cui.trim());
     }
   };
@@ -33,7 +35,22 @@ export const AnafSearch = () => {
 
       {error && (
         <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription>
+            <div className="space-y-2">
+              <p>{error}</p>
+              {error.includes("fetch") && (
+                <>
+                  <p className="font-semibold">Eroarea CORS: Browserul nu permite apelarea directă a API-ului ANAF</p>
+                  <p>Soluții posibile:</p>
+                  <ol className="list-decimal pl-5 space-y-1">
+                    <li>Utilizați o extensie de browser pentru a dezactiva CORS (doar pentru dezvoltare)</li>
+                    <li>Creați un server proxy simplu folosind Node.js/Express</li>
+                    <li>Utilizați un serviciu precum Supabase Edge Functions pentru a crea un proxy</li>
+                  </ol>
+                </>
+              )}
+            </div>
+          </AlertDescription>
         </Alert>
       )}
 
