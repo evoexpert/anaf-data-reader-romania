@@ -13,11 +13,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 export const AnafSearch = () => {
   const [cui, setCui] = useState('');
-  const [selectedYear, setSelectedYear] = useState<string>('2019');
+  const [selectedYear, setSelectedYear] = useState<string>('2024');
   const { searchCompany, loading: loadingCompany, error: errorCompany, data: companyData } = useAnafApi();
   const { getBalanceData, loading: loadingBalance, error: errorBalance, data: balanceData } = useAnafBilant();
 
-  const years = ['2019', '2018', '2017', '2016', '2015', '2014'];
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: currentYear - 2013 }, (_, i) => (currentYear - i).toString());
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,6 +26,9 @@ export const AnafSearch = () => {
       toast.info("Se trimit date către API-ul ANAF...");
       await searchCompany(cui.trim());
       if (selectedYear) {
+        if (parseInt(selectedYear) > 2019) {
+          toast.warning("Este posibil ca datele să nu fie disponibile pentru anul selectat. ANAF oferă date istoric până în 2019.");
+        }
         toast.info(`Se solicită bilanțul pentru anul ${selectedYear}...`);
         await getBalanceData(cui.trim(), parseInt(selectedYear));
       }
