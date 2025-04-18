@@ -4,19 +4,30 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAnafApi } from '@/hooks/useAnafApi';
+import { useAnafBilant } from '@/hooks/useAnafBilant';
 import { toast } from '@/components/ui/sonner';
 import { CompanyFullData } from '@/types/anaf';
 import { CompanyDetails } from './CompanyDetails';
+import { CompanyBalance } from './CompanyBalance';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const AnafSearch = () => {
   const [cui, setCui] = useState('');
-  const { searchCompany, loading, error, data } = useAnafApi();
+  const [selectedYear, setSelectedYear] = useState<string>('2019');
+  const { searchCompany, loading: loadingCompany, error: errorCompany, data: companyData } = useAnafApi();
+  const { getBalanceData, loading: loadingBalance, error: errorBalance, data: balanceData } = useAnafBilant();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const years = ['2019', '2018', '2017', '2016', '2015', '2014'];
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (cui.trim()) {
       toast.info("Se trimit date către API-ul ANAF...");
-      searchCompany(cui.trim());
+      await searchCompany(cui.trim());
+      if (selectedYear) {
+        toast.info(`Se solicită bilanțul pentru anul ${selectedYear}...`);
+        await getBalanceData(cui.trim(), parseInt(selectedYear));
+      }
     }
   };
 
@@ -30,39 +41,48 @@ export const AnafSearch = () => {
           placeholder="Introduceți CUI-ul companiei"
           className="flex-1"
         />
-        <Button type="submit" disabled={loading || !cui.trim()}>
-          {loading ? 'Se caută...' : 'Caută'}
+        <Select
+          value={selectedYear}
+          onValueChange={setSelectedYear}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Selectează anul" />
+          </SelectTrigger>
+          <SelectContent>
+            {years.map(year => (
+              <SelectItem key={year} value={year}>
+                Bilanț {year}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button type="submit" disabled={loadingCompany || loadingBalance || !cui.trim()}>
+          {loadingCompany || loadingBalance ? 'Se caută...' : 'Caută'}
         </Button>
       </form>
 
-      {error && (
+      {(errorCompany || errorBalance) && (
         <Alert variant="destructive">
           <AlertDescription>
             <div className="space-y-2">
-              <p>{error}</p>
-              {error.includes("conexiune") && (
-                <>
-                  <p className="font-semibold">Problema de conexiune la serverul ANAF</p>
-                  <p>Soluții posibile:</p>
-                  <ol className="list-decimal pl-5 space-y-1">
-                    <li>Verificați că serverul de dezvoltare Vite rulează</li>
-                    <li>Verificați configurația proxy în vite.config.ts</li>
-                    <li>Asigurați-vă că API-ul ANAF este disponibil</li>
-                  </ol>
-                </>
-              )}
+              {errorCompany && <p>{errorCompany}</p>}
+              {errorBalance && <p>{errorBalance}</p>}
             </div>
           </AlertDescription>
         </Alert>
       )}
 
-      {data && data.found && data.found.length > 0 && (
-        data.found.map((company: CompanyFullData) => (
+      {companyData && companyData.found && companyData.found.length > 0 && (
+        companyData.found.map((company: CompanyFullData) => (
           <CompanyDetails key={company.date_generale.cui} company={company} />
         ))
       )}
 
-      {data && data.notFound && data.notFound.length > 0 && (
+      {balanceData && (
+        <CompanyBalance balance={balanceData} />
+      )}
+
+      {companyData && companyData.notFound && companyData.notFound.length > 0 && (
         <Alert>
           <AlertDescription>Nu s-au găsit informații pentru CUI-ul introdus.</AlertDescription>
         </Alert>
