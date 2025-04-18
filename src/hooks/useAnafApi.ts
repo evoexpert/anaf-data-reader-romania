@@ -70,10 +70,10 @@ export const useAnafApi = () => {
       
       // Verificăm dacă eroarea este legată de CORS sau conexiune
       if (errorMessage.toLowerCase().includes('fetch') || errorMessage.includes('NetworkError')) {
-        errorMessage = "Eroare de conexiune: Nu s-a putut contacta serverul ANAF prin proxy. Asigurați-vă că serverul de dezvoltare Vite rulează și că configurația proxy este corectă.";
+        errorMessage = "Eroare de conexiune: Nu s-a putut contacta serverul ANAF prin proxy. În mediul de preview Lovable, proxy-ul nu funcționează ca în mediul local Vite.";
       } else if (errorMessage.includes('JSON')) {
-        errorMessage = "Eroare de formatare: Răspunsul de la serverul ANAF nu este în format JSON valid. Este posibil ca serviciul să fie indisponibil temporar sau proxy-ul să nu funcționeze corect.";
-        toast.error("API-ul ANAF nu a răspuns corect. Încercați din nou mai târziu.");
+        errorMessage = "Eroare de formatare: Răspunsul de la serverul ANAF nu este în format JSON valid. Este posibil ca serviciul să fie indisponibil temporar sau proxy-ul să nu funcționeze corect în mediul curent.";
+        toast.error("API-ul ANAF nu funcționează în mediul de preview. Rulați aplicația local pentru a testa.");
       }
       
       setError(errorMessage);

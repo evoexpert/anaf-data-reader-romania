@@ -12,7 +12,8 @@ import { CompanyBalance } from './CompanyBalance';
 import { FinancialCharts } from './FinancialCharts';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CompanyBalance as CompanyBalanceType } from '@/types/anafBilant';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle, RefreshCw, Info } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 
 export const AnafSearch = () => {
   const [cui, setCui] = useState('');
@@ -90,9 +91,34 @@ export const AnafSearch = () => {
 
   const hasMultiYearData = Object.values(multiYearData).some(data => data !== null && data.i && data.i.length > 0);
   const isLoading = loadingCompany || loadingBalance;
+  const isAPIError = errorCompany && errorCompany.includes("JSON");
 
   return (
     <div className="max-w-4xl mx-auto p-4 space-y-4">
+      {isAPIError && (
+        <Card className="bg-amber-50 dark:bg-amber-950 border-amber-300 dark:border-amber-800 mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Info className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              Informație importantă
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="mb-2">
+              API-ul ANAF nu poate fi accesat direct din mediul de preview Lovable din cauza restricțiilor CORS și configurației proxy.
+            </p>
+            <p className="mb-2">
+              Pentru a testa complet această aplicație, clonați codul și rulați-l local cu Vite, unde configurația proxy din vite.config.ts va funcționa corect.
+            </p>
+          </CardContent>
+          <CardFooter className="text-sm text-muted-foreground">
+            <p>
+              Eroare: Răspunsul de la serverul ANAF este HTML în loc de JSON, ceea ce indică faptul că proxy-ul nu funcționează în acest mediu.
+            </p>
+          </CardFooter>
+        </Card>
+      )}
+
       <form onSubmit={handleSubmit} className="flex gap-2">
         <Input
           type="text"
