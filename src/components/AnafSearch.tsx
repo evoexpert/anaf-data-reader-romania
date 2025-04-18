@@ -20,11 +20,12 @@ export const AnafSearch = () => {
   const [multiYearData, setMultiYearData] = useState<Record<string, CompanyBalanceType | null>>({});
   const [activeTab, setActiveTab] = useState('overview');
 
+  // Calculăm anii pentru care putem solicita bilanțuri (ultimii 3 ani, excluzând anul curent)
   const currentYear = new Date().getFullYear();
-  const lastThreeYears = [
-    currentYear - 2,
+  const availableYears = [
     currentYear - 1,
-    currentYear
+    currentYear - 2,
+    currentYear - 3
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -34,11 +35,8 @@ export const AnafSearch = () => {
       toast.info("Se trimit date către API-ul ANAF...");
       await searchCompany(cui.trim());
       
-      // Fetch data for the last three years
-      for (const year of lastThreeYears) {
-        if (year > 2019) {
-          toast.warning(`Este posibil ca datele să nu fie disponibile pentru anul ${year}. ANAF oferă date istoric până în 2019.`);
-        }
+      // Fetch data for the available years
+      for (const year of availableYears) {
         toast.info(`Se solicită bilanțul pentru anul ${year}...`);
         const balanceData = await getBalanceData(cui.trim(), year);
         
@@ -51,13 +49,13 @@ export const AnafSearch = () => {
       }
       
       // Switch to the financial tab after fetching data
-      if (Object.keys(multiYearData).length > 0) {
+      if (Object.values(multiYearData).some(data => data !== null)) {
         setActiveTab('financial');
       }
     }
   };
 
-  const hasMultiYearData = Object.values(multiYearData).some(data => data !== null);
+  const hasMultiYearData = Object.values(multiYearData).some(data => data !== null && data.i && data.i.length > 0);
 
   return (
     <div className="max-w-4xl mx-auto p-4 space-y-4">
@@ -101,7 +99,7 @@ export const AnafSearch = () => {
               <div className="space-y-6">
                 <FinancialCharts data={multiYearData} />
                 {Object.entries(multiYearData)
-                  .filter(([_, data]) => data !== null)
+                  .filter(([_, data]) => data !== null && data.i && data.i.length > 0)
                   .sort(([yearA], [yearB]) => parseInt(yearB) - parseInt(yearA))
                   .map(([year, data]) => (
                     data && <CompanyBalance key={year} balance={data} />
@@ -113,7 +111,7 @@ export const AnafSearch = () => {
                 <div className="py-8 text-center">Se încarcă datele financiare...</div>
               ) : (
                 <div className="py-8 text-center">
-                  Nu există date financiare disponibile pentru anii selectați.
+                  Nu există date financiare disponibile pentru anii {availableYears.join(', ')}.
                 </div>
               )
             )}

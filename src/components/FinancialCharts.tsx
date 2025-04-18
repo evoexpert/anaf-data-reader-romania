@@ -2,13 +2,6 @@
 import { CompanyBalance } from '@/types/anafBilant';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  ChartLegend,
-  ChartLegendContent,
-} from '@/components/ui/chart';
-import {
   BarChart,
   Bar,
   LineChart,
@@ -32,21 +25,25 @@ interface FinancialChartsProps {
 export const FinancialCharts = ({ data }: FinancialChartsProps) => {
   // Filter out null values and sort by year
   const validYears = Object.entries(data)
-    .filter(([_, balanceData]) => balanceData !== null)
+    .filter(([_, balanceData]) => balanceData !== null && balanceData.i && balanceData.i.length > 0)
     .sort(([yearA], [yearB]) => parseInt(yearA) - parseInt(yearB));
 
   if (validYears.length === 0) {
-    return null;
+    return (
+      <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg text-center">
+        Nu există date financiare disponibile pentru a genera grafice.
+      </div>
+    );
   }
 
   // Get the data for revenue, expenses and profit
   const chartData = validYears.map(([year, balanceData]) => {
-    if (!balanceData) return null;
+    if (!balanceData || !balanceData.i || balanceData.i.length === 0) return null;
     
-    const revenues = balanceData.i.find(i => i.indicator === 'I27')?.val_indicator || 0;
-    const expenses = balanceData.i.find(i => i.indicator === 'I28')?.val_indicator || 0;
-    const profit = balanceData.i.find(i => i.indicator === 'I31')?.val_indicator || 0;
-    const employees = balanceData.i.find(i => i.indicator === 'I33')?.val_indicator || 0;
+    const revenues = balanceData.i.find(i => i.indicator === 'I27' || i.indicator === 'I14')?.val_indicator || 0;
+    const expenses = balanceData.i.find(i => i.indicator === 'I28' || i.indicator === 'I15')?.val_indicator || 0;
+    const profit = balanceData.i.find(i => i.indicator === 'I31' || i.indicator === 'I18')?.val_indicator || 0;
+    const employees = balanceData.i.find(i => i.indicator === 'I33' || i.indicator === 'I20')?.val_indicator || 0;
     
     return {
       year,
@@ -54,15 +51,19 @@ export const FinancialCharts = ({ data }: FinancialChartsProps) => {
       expenses,
       profit,
       employees,
-      companyName: balanceData.deni
+      companyName: balanceData.deni || 'Companie'
     };
   }).filter(Boolean);
 
   // For the latest year's data
   const latestYearData = chartData[chartData.length - 1];
   
-  if (!latestYearData) {
-    return null;
+  if (!latestYearData || chartData.length === 0) {
+    return (
+      <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg text-center">
+        Datele financiare nu conțin indicatori necesari pentru generarea graficelor.
+      </div>
+    );
   }
 
   // Data for the pie chart
