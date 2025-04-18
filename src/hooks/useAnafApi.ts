@@ -17,20 +17,11 @@ export const useAnafApi = () => {
     setLoading(true);
     setError(null);
     
-    // Verificăm dacă suntem în mediul Lovable
-    if (isLovableEnvironment) {
-      console.log("Rulăm în mediul Lovable - API-ul ANAF nu va funcționa fără un proxy adecvat");
-      setLoading(false);
-      toast.error("API-ul ANAF nu poate fi accesat direct din mediul Lovable");
-      setError("API-ul ANAF nu poate fi accesat direct din mediul Lovable. Rulați aplicația local pentru testare completă.");
-      return null;
-    }
-
     try {
       console.log("Trimitem request către API-ul ANAF prin anafProxy...");
       const currentDate = new Date().toISOString().split('T')[0];
       
-      // Utilizăm funcția anafProxy
+      // Utilizăm funcția anafProxy actualizată
       const result = await anafProxy(cui, currentDate);
       console.log("Date primite:", result);
       

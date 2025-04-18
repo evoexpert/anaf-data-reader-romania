@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -45,17 +44,13 @@ export const AnafSearch = () => {
     setMultiYearData({});
     setSearchAttempted(true);
     
-    if (!isLovableEnvironment) {
-      toast.info("Se trimit date către API-ul ANAF...");
-    }
+    toast.info("Se trimit date către API-ul ANAF...");
     
     try {
       const companyResult = await searchCompany(cleanCui);
       
       if (!companyResult) {
-        if (!isLovableEnvironment) {
-          toast.error("Nu s-au putut obține date despre companie.");
-        }
+        toast.error("Nu s-au putut obține date despre companie.");
         return;
       }
       
@@ -63,9 +58,7 @@ export const AnafSearch = () => {
       if (companyResult.found && companyResult.found.length > 0) {
         // Fetch data for the available years
         for (const year of availableYears) {
-          if (!isLovableEnvironment) {
-            toast.info(`Se solicită bilanțul pentru anul ${year}...`);
-          }
+          toast.info(`Se solicită bilanțul pentru anul ${year}...`);
           
           try {
             const balanceData = await getBalanceData(cleanCui, year);
@@ -86,14 +79,12 @@ export const AnafSearch = () => {
         if (Object.values(multiYearData).some(data => data !== null)) {
           setActiveTab('financial');
         }
-      } else if (!isLovableEnvironment) {
+      } else {
         toast.warning("Nu s-au găsit informații pentru acest CUI.");
       }
     } catch (error) {
       console.error("Eroare în timpul procesului de căutare:", error);
-      if (!isLovableEnvironment) {
-        toast.error("A apărut o eroare în timpul procesului de căutare. Încercați din nou.");
-      }
+      toast.error("A apărut o eroare în timpul procesului de căutare. Încercați din nou.");
     }
   };
 
@@ -107,26 +98,26 @@ export const AnafSearch = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Info className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-              Mediu Lovable detectat
+              Încercare de acces alternativ API ANAF
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="mb-2">
-              API-ul ANAF nu poate fi accesat direct din mediul Lovable din cauza restricțiilor CORS și limitărilor de securitate.
+              Aplicația va încerca să acceseze API-ul ANAF folosind metode alternative de proxy CORS.
             </p>
             <p className="font-medium">
-              Pentru a testa complet această aplicație:
+              Dacă întâmpinați probleme:
             </p>
             <ol className="list-decimal pl-6 mt-2 space-y-2">
-              <li>Clonați codul pe calculatorul dumneavoastră</li>
-              <li>Instalați dependențele: <code className="bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">npm install</code> sau <code className="bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">yarn</code></li>
-              <li>Rulați aplicația local: <code className="bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">npm run dev</code> sau <code className="bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">yarn dev</code></li>
+              <li>Este posibil ca serviciile de proxy să fie limitate sau temporar indisponibile</li>
+              <li>Pentru funcționalitate completă, rulați aplicația local</li>
+              <li>API-ul ANAF poate avea perioade de indisponibilitate</li>
             </ol>
           </CardContent>
           <CardFooter className="flex flex-col items-start text-sm text-muted-foreground">
             <p className="flex items-center gap-1">
               <ArrowDownToLine className="h-4 w-4" /> 
-              Local, configurația proxy din vite.config.ts va funcționa corect.
+              Pentru cea mai bună experiență, rulați aplicația local.
             </p>
           </CardFooter>
         </Card>
