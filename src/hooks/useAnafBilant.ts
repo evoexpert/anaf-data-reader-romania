@@ -24,10 +24,12 @@ export const useAnafBilant = () => {
       const result = await response.json();
       console.log("Date bilanț primite:", result);
       setData(result);
+      return result;
     } catch (err) {
       console.error("Eroare în timpul apelului API bilanț:", err);
       let errorMessage = err instanceof Error ? err.message : 'A apărut o eroare neașteptată';
       setError(errorMessage);
+      return null;
     } finally {
       setLoading(false);
     }
