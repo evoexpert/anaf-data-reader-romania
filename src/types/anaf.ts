@@ -1,4 +1,3 @@
-
 export interface CompanyGeneralData {
   cui: number;
   data: string;
@@ -72,7 +71,7 @@ export interface CompanyFullData {
   inregistrare_scop_Tva: CompanyTvaRegistration;
   inregistrare_RTVAI: CompanyTvaInc;
   stare_inactiv: CompanyInactiveState;
-  inregistrare_SplitTVA: CompanySplitTVA;
+  inregistrare_SplitTVA: CompanySplitTva;
   adresa_sediu_social: CompanyAddress;
   adresa_domiciliu_fiscal: CompanyAddress;
 }
