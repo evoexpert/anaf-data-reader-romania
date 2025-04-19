@@ -1,13 +1,16 @@
 
 import fs from 'fs';
 import { anafProxy } from './anafProxy';
-import { createObjectCsvWriter } from 'csv-writer';
 import { CompanyFullData } from '@/types/anaf';
 
 /**
  * Utilitar pentru extragerea datelor de la ANAF și exportarea în CSV
  * Notă: Acest script este destinat rulării într-un mediu Node.js, nu în browser.
  */
+
+// Import csv-writer with require to avoid TypeScript issues
+// This is a workaround since the type definitions aren't available
+const csvWriter = require('csv-writer');
 
 // Configurație pentru extragere
 interface ExportConfig {
@@ -35,8 +38,15 @@ export async function exportAnafDataToCsv(config: ExportConfig) {
   console.log(`Datele vor fi salvate în ${outputFilePath}`);
   console.log(`Rata de extragere: o firmă la fiecare ${delayBetweenRequests}ms`);
   
+  // Verificăm dacă directorul pentru fișierul de ieșire există
+  const outputDir = outputFilePath.substring(0, outputFilePath.lastIndexOf('/'));
+  if (outputDir && outputDir !== '' && !fs.existsSync(outputDir)) {
+    console.log(`Creăm directorul pentru fișierul de ieșire: ${outputDir}`);
+    fs.mkdirSync(outputDir, { recursive: true });
+  }
+  
   // Creăm writer-ul pentru CSV
-  const csvWriter = createObjectCsvWriter({
+  const writer = csvWriter.createObjectCsvWriter({
     path: outputFilePath,
     header: [
       { id: 'cui', title: 'CUI' },
@@ -121,7 +131,7 @@ export async function exportAnafDataToCsv(config: ExportConfig) {
       
       // Salvează datele în batch-uri
       if (records.length >= batchSize) {
-        await csvWriter.writeRecords(records);
+        await writer.writeRecords(records);
         console.log(`✍️ Salvat batch de ${records.length} înregistrări în CSV`);
         records = [];
       }
@@ -137,7 +147,7 @@ export async function exportAnafDataToCsv(config: ExportConfig) {
     
     // Salvează orice înregistrări rămase
     if (records.length > 0) {
-      await csvWriter.writeRecords(records);
+      await writer.writeRecords(records);
       console.log(`✍️ Salvat ultimele ${records.length} înregistrări în CSV`);
     }
     
@@ -149,6 +159,7 @@ export async function exportAnafDataToCsv(config: ExportConfig) {
     
   } catch (error) {
     console.error('Eroare critică în timpul procesării:', error);
+    throw error; // Re-aruncăm eroarea pentru a putea fi gestionată de apelant
   }
 }
 
