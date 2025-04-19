@@ -25,6 +25,11 @@ export const useAnafApi = () => {
       const result = await anafProxy(cui, currentDate);
       console.log("Date primite:", result);
       
+      // Verificăm dacă avem un rezultat valid
+      if (!result || typeof result !== 'object') {
+        throw new Error("Răspunsul de la API-ul ANAF nu are un format valid.");
+      }
+      
       setData(result);
       return result;
     } catch (err) {
@@ -39,6 +44,11 @@ export const useAnafApi = () => {
       } else if (errorMessage.includes('JSON')) {
         errorMessage = "Eroare de formatare: Răspunsul de la serverul ANAF nu este în format JSON valid. " + 
                       "Este posibil ca serviciul să fie indisponibil temporar.";
+      }
+      
+      // Adăugăm informații specifice despre mediul Lovable
+      if (isLovableEnvironment) {
+        errorMessage += " În mediul Lovable, există restricții CORS care pot împiedica accesul direct la API-ul ANAF.";
       }
       
       toast.error("Eroare: " + errorMessage);

@@ -23,6 +23,17 @@ export default defineConfig(({ mode }) => ({
           'sec-ch-ua-mobile': '?0',
           'sec-ch-ua-platform': '"Windows"',
         },
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.log('Eroare proxy:', err);
+          });
+          proxy.on('proxyReq', (proxyReq, req, _res) => {
+            console.log('Cerere proxy:', req.method, req.url);
+          });
+          proxy.on('proxyRes', (proxyRes, req, _res) => {
+            console.log('Răspuns proxy:', proxyRes.statusCode, req.url);
+          });
+        },
         timeout: 30000,
       }
     }
