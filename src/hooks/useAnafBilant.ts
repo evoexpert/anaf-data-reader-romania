@@ -4,46 +4,10 @@ import { CompanyBalance } from '@/types/anafBilant';
 import { toast } from '@/components/ui/sonner';
 import axios from 'axios';
 
-// URL-uri pentru proxy CORS
-const CORS_PROXY_URL = 'https://corsproxy.io/?';
-const ANAF_BILANT_URL = 'https://webservicesp.anaf.ro/bilant';
-
-// Mock data pentru testare în mediul Lovable
-const MOCK_BILANT_DATA: CompanyBalance = {
-  "an": 2022,
-  "cui": 12345678,
-  "deni": "COMPANIE DE TEST SRL",
-  "caen": 6201,
-  "den_caen": "Activitati de realizare a soft-ului la comanda",
-  "i": [
-    { "indicator": "I1", "val_indicator": 1250000, "val_den_indicator": "Total active imobilizate" },
-    { "indicator": "I2", "val_indicator": 895000, "val_den_indicator": "Total active circulante" },
-    { "indicator": "I3", "val_indicator": 15000, "val_den_indicator": "Cheltuieli în avans" },
-    { "indicator": "I4", "val_indicator": 350000, "val_den_indicator": "Datorii" },
-    { "indicator": "I5", "val_indicator": 1810000, "val_den_indicator": "Capitaluri - total" },
-    { "indicator": "I6", "val_indicator": 175000, "val_den_indicator": "Provizioane" },
-    { "indicator": "I7", "val_indicator": 15000, "val_den_indicator": "Venituri în avans" },
-    { "indicator": "I8", "val_indicator": 10000, "val_den_indicator": "Capital subscris vărsat" },
-    { "indicator": "I9", "val_indicator": 0, "val_den_indicator": "Patrimoniul regiei" },
-    { "indicator": "I10", "val_indicator": 350000, "val_den_indicator": "Patrimoniul public" },
-    { "indicator": "I11", "val_indicator": 1500000, "val_den_indicator": "Cifra de afaceri netă" },
-    { "indicator": "I13", "val_indicator": 1550000, "val_den_indicator": "Venituri din exploatare - total" },
-    { "indicator": "I19", "val_indicator": 1250000, "val_den_indicator": "Cheltuieli de exploatare - total" },
-    { "indicator": "I25", "val_indicator": 300000, "val_den_indicator": "Profit din exploatare" },
-    { "indicator": "I27", "val_indicator": 1575000, "val_den_indicator": "Venituri totale" },
-    { "indicator": "I28", "val_indicator": 1275000, "val_den_indicator": "Cheltuieli totale" },
-    { "indicator": "I29", "val_indicator": 300000, "val_den_indicator": "Profit brut" },
-    { "indicator": "I31", "val_indicator": 252000, "val_den_indicator": "Profit net" },
-    { "indicator": "I33", "val_indicator": 25, "val_den_indicator": "Număr mediu de salariați" }
-  ]
-};
-
 export const useAnafBilant = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<CompanyBalance | null>(null);
-  const isLovableEnvironment = window.location.hostname.includes('lovableproject.com') || 
-                              window.location.hostname.includes('lovable.app');
 
   const getBalanceData = async (cui: string, year: number) => {
     setLoading(true);
@@ -52,36 +16,9 @@ export const useAnafBilant = () => {
     try {
       console.log(`Se solicită bilanțul pentru CUI ${cui} și anul ${year}...`);
       
-      // Pentru mediul Lovable, returnăm date mock
-      if (isLovableEnvironment) {
-        console.log('Utilizăm date mock pentru bilanț în mediul Lovable');
-        
-        // Simulăm o întârziere de rețea pentru a face experiența mai realistă
-        await new Promise(resolve => setTimeout(resolve, 800));
-        
-        // Returnăm date mock ajustate pentru anul specificat
-        const mockData: CompanyBalance = {
-          ...MOCK_BILANT_DATA,
-          an: year,
-          cui: parseInt(cui),
-          deni: "COMPANIE DE TEST SRL",
-          caen: 6201,
-          den_caen: "Activitati de realizare a soft-ului la comanda",
-          // Ajustăm valorile pentru a varia în funcție de an
-          i: MOCK_BILANT_DATA.i.map(item => ({
-            ...item,
-            val_indicator: Math.round(item.val_indicator * (0.8 + (year % 10) * 0.05))
-          }))
-        };
-        
-        console.log('Date mock bilanț generate:', mockData);
-        setData(mockData);
-        return mockData;
-      }
-      
       // În mediul local folosim proxy-ul configurat în vite.config.ts
       let url = `/api/anaf/bilant?an=${year}&cui=${cui}&_ts=${Date.now()}`;
-      console.log('Solicitare bilanț prin proxy local:', url);
+      console.log('Solicitare bilanț:', url);
       
       const response = await fetch(url);
       
@@ -114,31 +51,7 @@ export const useAnafBilant = () => {
       }
       
       setError(errorMessage);
-      
-      // Dacă suntem în mediul Lovable și avem o eroare, returnăm date mock
-      if (isLovableEnvironment) {
-        console.log('Utilizăm date mock pentru bilanț după eroare în mediul Lovable');
-        
-        // Returnăm date mock ajustate pentru anul specificat
-        const mockData: CompanyBalance = {
-          ...MOCK_BILANT_DATA,
-          an: year,
-          cui: parseInt(cui),
-          deni: "COMPANIE DE TEST SRL",
-          caen: 6201,
-          den_caen: "Activitati de realizare a soft-ului la comanda",
-          // Ajustăm valorile pentru a varia în funcție de an
-          i: MOCK_BILANT_DATA.i.map(item => ({
-            ...item,
-            val_indicator: Math.round(item.val_indicator * (0.8 + (year % 10) * 0.05))
-          }))
-        };
-        
-        console.log('Date mock bilanț generate după eroare:', mockData);
-        setData(mockData);
-        return mockData;
-      }
-      
+      toast.error(errorMessage);
       return null;
     } finally {
       setLoading(false);
