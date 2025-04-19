@@ -9,9 +9,12 @@ const CORS_PROXY_URL = 'https://corsproxy.io/?';
 const ANAF_BILANT_URL = 'https://webservicesp.anaf.ro/bilant';
 
 // Mock data pentru testare în mediul Lovable
-const MOCK_BILANT_DATA = {
+const MOCK_BILANT_DATA: CompanyBalance = {
   "an": 2022,
-  "cui": "12345678",
+  "cui": 12345678,
+  "deni": "COMPANIE DE TEST SRL",
+  "caen": 6201,
+  "den_caen": "Activitati de realizare a soft-ului la comanda",
   "i": [
     { "indicator": "I1", "val_indicator": 1250000, "val_den_indicator": "Total active imobilizate" },
     { "indicator": "I2", "val_indicator": 895000, "val_den_indicator": "Total active circulante" },
@@ -57,10 +60,13 @@ export const useAnafBilant = () => {
         await new Promise(resolve => setTimeout(resolve, 800));
         
         // Returnăm date mock ajustate pentru anul specificat
-        const mockData = {
+        const mockData: CompanyBalance = {
           ...MOCK_BILANT_DATA,
           an: year,
-          cui: cui,
+          cui: parseInt(cui),
+          deni: "COMPANIE DE TEST SRL",
+          caen: 6201,
+          den_caen: "Activitati de realizare a soft-ului la comanda",
           // Ajustăm valorile pentru a varia în funcție de an
           i: MOCK_BILANT_DATA.i.map(item => ({
             ...item,
@@ -114,10 +120,13 @@ export const useAnafBilant = () => {
         console.log('Utilizăm date mock pentru bilanț după eroare în mediul Lovable');
         
         // Returnăm date mock ajustate pentru anul specificat
-        const mockData = {
+        const mockData: CompanyBalance = {
           ...MOCK_BILANT_DATA,
           an: year,
-          cui: cui,
+          cui: parseInt(cui),
+          deni: "COMPANIE DE TEST SRL",
+          caen: 6201,
+          den_caen: "Activitati de realizare a soft-ului la comanda",
           // Ajustăm valorile pentru a varia în funcție de an
           i: MOCK_BILANT_DATA.i.map(item => ({
             ...item,
